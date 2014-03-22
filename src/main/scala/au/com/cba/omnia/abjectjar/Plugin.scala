@@ -14,6 +14,20 @@ object Plugin extends sbt.Plugin {
     val finder: PathFinder = PathFinder(base).***
     finder.get
   }
+
+  def compiledFiles(products: Seq[File]):Seq[(File, String)] = {
+    products.map(f => {
+      val topLevel = List.fromArray(f.list()).map(t => new File(f, t))
+      val children = topLevel.flatMap(x => allFiles(x))
+      children.map(c => (c, Path.relativizeFile(f, c)))
+        .filter{_ match {
+        case (_, None) => false
+        case (_,Some(_)) => true
+      }
+      }
+        .map{x => (x._1,x._2.getOrElse(f).toString)}
+    }).flatten
+  }
  
   val abjectJarSettings: Seq[Project.Setting[_]] = inTask(abjectJar)(Seq(
     artifactPath <<= artifactPathSetting(artifact),
@@ -24,24 +38,14 @@ object Plugin extends sbt.Plugin {
       case Some(mainClass) => Seq(ManifestAttributes((MAIN_CLASS, mainClass)))
       case _ => Seq()
     },
-    mappings in abjectJar <<= (products in Compile, dependencyClasspath in Runtime).map {(products, classpath) =>
-      println(products)
-      val thisArtifactMapping: Seq[(File, String)] = products.map(f => {
-        val topLevel = List.fromArray(f.list()).map(t => new File(f, t))
-        val children = topLevel.flatMap(x => allFiles(x))
-        children.map(c => (c, Path.relativizeFile(f, c)))
-          .filter{_ match {
-            case (_, None) => false
-            case (_,Some(_)) => true
-          }
-        }
-          .map{x => (x._1,x._2.getOrElse(f).toString)}
-      }).flatten
+    mappings in abjectJar <<= (products in Compile, dependencyClasspath in Runtime, internalDependencyClasspath in Runtime).map {(products, classpath, internal) =>
+      val thisArtifactMapping = compiledFiles(products)
+      val internalDeps = compiledFiles(Attributed.data(internal))
       val deps: Seq[(File, String)] = {
           val allDeps = Build.data(classpath).map(f => (f, (file("lib") / f.name).getPath))
           allDeps.filterNot(_._1 == artifact)
       }
-      thisArtifactMapping ++ deps
+      thisArtifactMapping ++ internalDeps ++ deps
     },
     abjectJar <<= (mappings in abjectJar, artifactPath in abjectJar, packageOptions in abjectJar, cacheDirectory in abjectJar, streams) map {
       (mappings, output, packOpts, cacheDir, s) =>
