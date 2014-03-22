@@ -4,7 +4,7 @@ name := "abject-jar"
 
 organization := "au.com.cba.omnia"
 
-version := "0.0.1"
+version := "0.0.2"
 
 description := "sbt plugin to create a single fat jar, in the legacy hadoop format"
 

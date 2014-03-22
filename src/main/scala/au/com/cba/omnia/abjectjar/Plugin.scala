@@ -37,7 +37,6 @@ object Plugin extends sbt.Plugin {
         }
           .map{x => (x._1,x._2.getOrElse(f).toString)}
       }).flatten
-      println(thisArtifactMapping)
       val deps: Seq[(File, String)] = {
           val allDeps = Build.data(classpath).map(f => (f, (file("lib") / f.name).getPath))
           allDeps.filterNot(_._1 == artifact)
