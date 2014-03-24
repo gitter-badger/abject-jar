@@ -19,13 +19,9 @@ object Plugin extends sbt.Plugin {
     products.map(f => {
       val topLevel = List.fromArray(f.list()).map(t => new File(f, t))
       val children = topLevel.flatMap(x => allFiles(x))
-      children.map(c => (c, Path.relativizeFile(f, c)))
-        .filter{_ match {
-        case (_, None) => false
-        case (_,Some(_)) => true
-      }
-      }
-        .map{x => (x._1,x._2.getOrElse(f).toString)}
+      children.flatMap(c => 
+        Path.relativizeFile(f, c).map(relativePath => (c, relativePath.toString))
+      )
     }).flatten
   }
  
@@ -38,7 +34,7 @@ object Plugin extends sbt.Plugin {
       case Some(mainClass) => Seq(ManifestAttributes((MAIN_CLASS, mainClass)))
       case _ => Seq()
     },
-    mappings in abjectJar <<= (products in Compile, dependencyClasspath in Runtime, internalDependencyClasspath in Runtime).map {(products, classpath, internal) =>
+    mappings in abjectJar <<= (products in Compile, dependencyClasspath in Compile, internalDependencyClasspath in Runtime).map {(products, classpath, internal) =>
       val thisArtifactMapping = compiledFiles(products)
       val internalDeps = compiledFiles(Attributed.data(internal))
       val deps: Seq[(File, String)] = {
