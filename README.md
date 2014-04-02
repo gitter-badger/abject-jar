@@ -31,6 +31,12 @@ add abject-jar as a dependency in `project/plugins.sbt`:
 addSbtPlugin("au.com.cba.omnia" % "abject-jar" % "0.0.1")
 ```
 
+add the following line/settings to your `build.sbt`:
+
+```scala
+abjectJarSettings
+```
+
 To build a fat jar, simply run: 
 ```
 ./sbt abject-jar
